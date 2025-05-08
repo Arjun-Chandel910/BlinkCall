@@ -1,20 +1,19 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
+const app = express();
 import { createServer } from "http";
-import { Server } from "socket.io";
+const server = createServer(app);
 import mongoose from "mongoose";
 import cors from "cors";
+import { connectToSocket } from "./controllers/socketManagement.js";
+const io = connectToSocket(server);
 
-const app = express();
-const server = createServer(app);
-const io = new Server(server); //
 const port = process.env.PORT || 8000;
+app.use(express.json({ limit: "40kb" }));
+app.use(express.urlencoded({ limit: "40kb", extended: true }));
 
-app.get("/home", (req, res) => {
-  res.json({ home: "hello" });
-});
-
+app.use(cors());
 const start = async () => {
   await mongoose.connect(process.env.MONGODB_URL);
   console.log(`MONGO connected db HOST : ${mongoose.connection.host}`);
