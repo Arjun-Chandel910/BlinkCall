@@ -7,6 +7,9 @@ import User from "../models/user.model.js";
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
   try {
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Please provide details" });
+    }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(status.FOUND).json({ message: "User already exists." });
@@ -27,6 +30,9 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please provide details" });
+    }
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
       return res

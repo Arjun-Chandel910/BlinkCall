@@ -17,7 +17,7 @@ app.use(express.urlencoded({ limit: "40kb", extended: true }));
 
 app.use(cors());
 
-app.use("/api", userRoute);
+app.use("/api/v1/users", userRoute);
 
 const start = async () => {
   await mongoose.connect(process.env.MONGODB_URL);
