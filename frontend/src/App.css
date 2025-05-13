@@ -1,3 +1,5 @@
+/*landing page   */
+@import "tailwindcss";
 .landingPageContainer {
   width: 100vw;
   height: 100vh;
@@ -32,9 +34,6 @@
   justify-content: space-evenly;
   gap: 1.2rem;
   align-items: center;
-}
-.navlist button {
-  /* background-color: orange; */
 }
 
 .landingPageBody {
@@ -74,7 +73,7 @@
   margin-top: 1rem;
   border: none;
   width: 7rem;
-  height: 2rem;
+  height: 2.2 rem;
   border-radius: 8px;
   font-size: 1.4rem;
   background: #ff8c00;
@@ -83,3 +82,6 @@
 .landingPageBody div:nth-child(2) {
   margin-top: 3rem;
 }
+/*  */
+
+/*  */

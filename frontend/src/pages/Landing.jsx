@@ -38,11 +38,12 @@ export default function LandingPage() {
           </p>
           <div>
             <Link
-              to={"/home"}
+              to={"/auth"}
               style={{
                 color: "black",
                 textDecoration: "none",
-                paddingInline: "3px",
+                paddingInline: "auto",
+                paddingBlock: "auto",
               }}
             >
               Get Started
