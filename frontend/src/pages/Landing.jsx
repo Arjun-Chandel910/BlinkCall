@@ -41,6 +41,7 @@ export default function LandingPage() {
               to={"/auth"}
               style={{
                 color: "black",
+
                 textDecoration: "none",
                 paddingInline: "auto",
                 paddingBlock: "auto",

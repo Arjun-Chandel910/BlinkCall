@@ -1,12 +1,24 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { TextField, Button, FormControlLabel, Checkbox } from "@mui/material";
 import { AccountCircle } from "@mui/icons-material";
+import { useAuth } from "../context/AuthContext";
 
 const Authentication = () => {
+  const { handleRegister, handleLogin } = useAuth();
+
   const [mode, setMode] = useState("signin");
-  const [name, setName] = useState("signin");
-  const [email, setEmail] = useState("signin");
-  const [password, setPassword] = useState("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleForm = async (e) => {
+    e.preventDefault();
+    if (mode == "signup") {
+      await handleRegister(name, email, password);
+    } else if (mode == "signin") {
+      await handleLogin(email, password);
+    }
+  };
 
   return (
     <div className="flex h-screen">
@@ -46,26 +58,51 @@ const Authentication = () => {
             </Button>
           </div>
 
-          <form>
+          <form onSubmit={handleForm}>
+            {mode == "signup" && (
+              <div>
+                <TextField
+                  required
+                  fullWidth
+                  label="name"
+                  type="text"
+                  variant="outlined"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                  }}
+                  sx={{
+                    mt: 2,
+                  }}
+                />
+              </div>
+            )}
             <div>
               <TextField
                 fullWidth
+                required
                 label="Email Address"
                 type="email"
                 variant="outlined"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
                 sx={{
-                  my: 4,
+                  my: 2,
                 }}
               />
             </div>
             <div>
               <TextField
+                required
                 fullWidth
                 label="Password"
                 type="password"
                 variant="outlined"
-                sx={{
-                  mb: 4,
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
                 }}
               />
             </div>
