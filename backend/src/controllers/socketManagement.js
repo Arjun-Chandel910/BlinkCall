@@ -12,6 +12,7 @@ export const connectToSocket = (server) => {
     },
   });
   io.on("connection", (socket) => {
+    console.log("socket woring ");
     //
     socket.on(
       ("join-call",

@@ -4,6 +4,8 @@ import { status } from "http-status";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+
+//register
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -27,6 +29,8 @@ export const register = async (req, res) => {
     res.json({ message: "Something went wrong" + e });
   }
 };
+
+//login
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
