@@ -38,7 +38,7 @@ export default function LandingPage() {
           </p>
           <div>
             <Link
-              to={"/auth"}
+              to={"/room"}
               style={{
                 color: "black",
 
