@@ -34,6 +34,18 @@ export const connectToSocket = (server) => {
       messages[roomId].push({ sender, content });
       socket.to(roomId).emit("new-message", { sender, content });
     });
+
+    //handle disconnection
+    socket.on("disconnect", () => {
+      const rooms = socket.rooms; //  gives all rooms the socket is in
+      rooms.forEach((roomId) => {
+        if (roomId === socket.id) return; // skip the personal room that is created after the socket.id
+        const socketsInRoom = io.sockets.adapter.rooms.get(roomId);
+        if (!socketsInRoom || socketsInRoom.size == 0) {
+          delete messages[roomId];
+        }
+      });
+    });
   });
   //
 
