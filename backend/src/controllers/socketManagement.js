@@ -1,7 +1,6 @@
 import { Server } from "socket.io";
 
 export const connectToSocket = (server) => {
-  const connections = {};
   const messages = {};
 
   const io = new Server(server, {
@@ -13,7 +12,20 @@ export const connectToSocket = (server) => {
     },
   });
   io.on("connection", (socket) => {
-    console.log(socket.id);
+    console.log("socket connected : " + socket.id);
+
+    //join call
+    socket.on("join-call", (roomId) => {
+      socket.join(roomId); // client joins a room.
+      socket.to(roomId).emit("user-joined", socket.id); // notifies everyone in the room that the client has joined.
+
+      if (messages[roomId]) {
+        // send previous messages in the room to the newly joined client
+        messages[roomId].forEach((msg) => {
+          socket.emit("send-prev-messages", { msg });
+        });
+      }
+    });
   });
   //
 
