@@ -26,6 +26,14 @@ export const connectToSocket = (server) => {
         });
       }
     });
+    //message handling
+    socket.on("message", (roomId, sender, content) => {
+      if (messages[roomId] == undefined) {
+        messages[roomId] = [];
+      }
+      messages[roomId].push({ sender, content });
+      socket.to(roomId).emit("new-message", { sender, content });
+    });
   });
   //
 
