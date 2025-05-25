@@ -5,5 +5,13 @@ import "../styles/videoComponent.css";
 import { io } from "socket.io-client";
 
 export default function VideoMeet() {
-  return <div>videoMeet</div>;
+  return (
+    <div>
+      <h1>Welcome to BlickCall</h1>
+      <br />
+      <input type="text" placeholder="username" />
+
+      <video ref={videoRef} muted autoPlay></video>
+    </div>
+  );
 }

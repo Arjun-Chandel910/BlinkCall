@@ -35,11 +35,24 @@ export const connectToSocket = (server) => {
       socket.to(roomId).emit("new-message", { sender, content });
     });
 
+    //network connection
+    socket.on("offer", ({ roomId, offer, senderId }) => {
+      socket.to(roomId).emit("offer", { offer, senderId });
+    });
+
+    socket.on("answer", ({ roomId, answer, senderId }) => {
+      socket.to(roomId).emit("answer", { answer, senderId });
+    });
+
+    socket.on("ice-candidate", ({ roomId, candidate, senderId }) => {
+      socket.to(roomId).emit("ice-candidate", { candidate, senderId });
+    });
+
     //handle disconnection
     socket.on("disconnect", () => {
       const rooms = socket.rooms; //  gives all rooms the socket is in
       rooms.forEach((roomId) => {
-        if (roomId === socket.id) return; // skip the personal room that is created after the socket.id
+        if (roomId === socket.id) return; // skip the personal room that is created after that socket's socket.id
         const socketsInRoom = io.sockets.adapter.rooms.get(roomId);
         if (!socketsInRoom || socketsInRoom.size == 0) {
           delete messages[roomId];
