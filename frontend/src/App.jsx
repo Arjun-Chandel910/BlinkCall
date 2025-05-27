@@ -6,6 +6,7 @@ import { ToastContainer, Bounce } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
 import VideoMeet from "./pages/VideoMeet";
 import MeetingCodePage from "./pages/MeetingCodePage";
+import VideoRoom from "./pages/VideoRoom";
 
 function App() {
   return (
@@ -29,8 +30,9 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="auth" element={<Authentication />} />
-            <Route path="/room/:url" element={<VideoMeet />} />
-            <Route path="/room" element={<MeetingCodePage />} />
+            <Route path="/room/:url/prejoin" element={<VideoMeet />} />
+            <Route path="/room/:url" element={<VideoRoom />} />
+            <Route path="/roomcode" element={<MeetingCodePage />} />
           </Routes>
         </AuthProvider>
       </Router>

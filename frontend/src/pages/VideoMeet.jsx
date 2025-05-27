@@ -1,21 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import { io } from "socket.io-client";
+import { useNavigate, useLocation } from "react-router-dom";
+import "../styles/videoComponent.css";
 
 export default function VideoMeet() {
+  const navigate = useNavigate();
+  const { state } = useLocation();
+  const videoRef = useRef(null);
+
   const [permissions, setPermissions] = useState({
     mic: false,
     cam: false,
-    screen: false,
   });
 
-  const [mediaState, setMediaState] = useState({
-    micOn: true,
-    camOn: true,
-    screenSharing: false,
-  });
-  const videoRef = useRef(null); // webcam video when we enter the username.
+  const [username, setUsername] = useState("");
 
   const checkPermission = async () => {
     try {
@@ -23,6 +20,7 @@ export default function VideoMeet() {
         video: true,
         audio: true,
       });
+
       const audioAllowed = stream.getAudioTracks().length > 0;
       const videoAllowed = stream.getVideoTracks().length > 0;
 
@@ -33,24 +31,39 @@ export default function VideoMeet() {
 
       if (stream && videoRef.current) videoRef.current.srcObject = stream;
     } catch (e) {
-      console.log("error : " + e);
+      console.error("Permission error:", e);
     }
   };
+
+  const connectToRoom = () => {
+    if (!username.trim()) {
+      alert("Enter your damn username!");
+      return;
+    }
+
+    navigate(`/room/${state}`, { state: { roomId: state, name: username } });
+  };
+
   useEffect(() => {
-    console.log(videoRef.current);
     checkPermission();
-    console.log(videoRef.current);
   }, []);
 
   return (
-    <div className="">
-      <h1>Welcome to BlickCall</h1>
-      <br />
-      <input type="text" placeholder="username" />
-      <button>connect</button>
-      <br />
-
-      <video ref={videoRef} muted autoPlay></video>
+    <div className="prejoin-container">
+      <div className="prejoin-card">
+        <h1 className="heading">Join the Room</h1>
+        <video ref={videoRef} muted autoPlay className="preview-video" />
+        <input
+          type="text"
+          placeholder="Enter your name"
+          className="name-input"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <button onClick={connectToRoom} className="connect-btn">
+          Connect
+        </button>
+      </div>
     </div>
   );
 }

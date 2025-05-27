@@ -11,7 +11,7 @@ const MeetingCodePage = () => {
       alert("Enter a damn meeting code!");
       return;
     }
-    navigate(`/room/${meetingCode.trim()}`);
+    navigate(`/room/${meetingCode.trim()}/prejoin`, { state: meetingCode });
   };
 
   return (

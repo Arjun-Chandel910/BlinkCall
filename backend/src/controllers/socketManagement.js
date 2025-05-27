@@ -5,7 +5,7 @@ export const connectToSocket = (server) => {
 
   const io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: "http://localhost:5173",
       methods: ["GET", "POST"],
       allowedHeaders: "*",
       credentials: true,
@@ -16,6 +16,7 @@ export const connectToSocket = (server) => {
 
     //join call
     socket.on("join-call", (roomId) => {
+      console.log("join-call : " + roomId);
       socket.join(roomId); // client joins a room.
       socket.to(roomId).emit("user-joined", socket.id); // notifies everyone in the room that the client has joined.
 
@@ -35,7 +36,7 @@ export const connectToSocket = (server) => {
       socket.to(roomId).emit("new-message", { sender, content });
     });
 
-    //network connection
+    //signaling channels
     socket.on("offer", ({ roomId, offer, senderId }) => {
       socket.to(roomId).emit("offer", { offer, senderId });
     });
