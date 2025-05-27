@@ -6,7 +6,8 @@ export default function VideoRoom() {
   const [messageButton, setMessageButton] = useState(false);
   const [preMessages, setPrevMessages] = useState({});
 
-  console.log(state.roomId, state.name);
+  const [inputMessage, setInputMessage] = useState("");
+
   const [mediaState, setMediaState] = useState({
     micOn: true,
     camOn: true,
@@ -31,11 +32,20 @@ export default function VideoRoom() {
         };
       });
     });
+    socket.current.on("new-message", ({ sender, content }) => {
+      console.log(sender + " sent " + content);
+    });
   };
 
   useEffect(() => {
     joinCall();
   }, []);
+
+  const sendMessage = () => {
+    socket.current.emit("message", state.roomId, state.name, inputMessage);
+  };
+
+  useEffect(() => {});
 
   return (
     <div className="flex h-screen bg-black text-white">
@@ -55,10 +65,21 @@ export default function VideoRoom() {
         <div className="flex gap-3">
           <input
             type="text"
-            className="flex-1 p-4 rounded-xl bg-gray-800 text-white text-lg focus:outline-none"
+            className="flex-1 p-4 rounded-xl
+             bg-gray-800 text-white text-lg 
+             focus:outline-none"
             placeholder="Type your message..."
+            value={inputMessage}
+            onChange={(e) => {
+              return setInputMessage(e.target.value);
+            }}
           />
-          <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl">
+          <button
+            className="px-6 py-3 bg-blue-600 
+          
+          hover:bg-blue-700 text-white font-semibold rounded-xl"
+            onClick={sendMessage}
+          >
             Send
           </button>
         </div>
