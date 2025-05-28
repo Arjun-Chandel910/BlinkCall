@@ -22,9 +22,7 @@ export const connectToSocket = (server) => {
 
       if (messages[roomId]) {
         // send previous messages in the room to the newly joined client
-        messages[roomId].forEach((msg) => {
-          socket.emit("send-prev-messages", { msg });
-        });
+        socket.emit("send-prev-messages", { msgs: messages[roomId] });
       }
     });
     //message handling
@@ -33,7 +31,7 @@ export const connectToSocket = (server) => {
         messages[roomId] = [];
       }
       messages[roomId].push({ sender, content });
-      socket.to(roomId).emit("new-message", { sender, content });
+      io.to(roomId).emit("new-message", { sender, content });
     });
 
     //signaling channels
@@ -58,6 +56,7 @@ export const connectToSocket = (server) => {
         if (!socketsInRoom || socketsInRoom.size == 0) {
           delete messages[roomId];
         }
+        the;
       });
     });
   });
