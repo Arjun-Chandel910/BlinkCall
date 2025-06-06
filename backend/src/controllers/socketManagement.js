@@ -16,6 +16,12 @@ export const connectToSocket = (server) => {
 
     //join call
     socket.on("join-call", (roomId) => {
+      const existingPeers = io.sockets.adapter.rooms.get(roomId);
+
+      existingPeers.forEach((peerId) => {
+        io.to(peerId).emit("offer-request", { targetId: socket.id });
+      });
+
       console.log("join-call : " + roomId);
       socket.join(roomId); // client joins a room.
       socket.to(roomId).emit("user-joined", socket.id); // notifies everyone in the room that the client has joined.
