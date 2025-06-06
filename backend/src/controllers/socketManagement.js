@@ -36,10 +36,12 @@ export const connectToSocket = (server) => {
 
     //signaling channels
     socket.on("offer", ({ roomId, offer, senderId }) => {
+      console.log("offer : " + offer);
       socket.to(roomId).emit("offer", { offer, senderId });
     });
 
     socket.on("answer", ({ roomId, answer, senderId }) => {
+      console.log("answer : " + answer);
       socket.to(roomId).emit("answer", { answer, senderId });
     });
 
@@ -56,7 +58,6 @@ export const connectToSocket = (server) => {
         if (!socketsInRoom || socketsInRoom.size == 0) {
           delete messages[roomId];
         }
-        the;
       });
     });
   });

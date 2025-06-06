@@ -7,6 +7,7 @@ export default function VideoRoom() {
   const [messages, setMessages] = useState({});
   const [inputMessage, setInputMessage] = useState("");
   const socket = useRef(null);
+  const peerConnectionRef = useRef(null);
 
   const joinCall = () => {
     socket.current = io("http://localhost:8000");
@@ -32,6 +33,41 @@ export default function VideoRoom() {
       }));
     });
   };
+
+  //offer creation
+  useEffect(() => {
+    peerConnectionRef.current = new RTCPeerConnection({
+      iceservers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
+
+    peerConnectionRef.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.current.emit("ice-candidate", {
+          roomId: state.roomId,
+          candidate: event.candidate,
+          senderId: state.name,
+        });
+      }
+    };
+    const sendOffer = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      stream.getTracks().forEach((track) => {
+        peerConnectionRef.current.addTrack(track, stream);
+      });
+      const offer = await peerConnectionRef.current.createOffer();
+      peerConnectionRef.current.setLocalDescription(offer);
+
+      socket.current.emit("offer", {
+        roomId: state.roomId,
+        offer: peerConnectionRef.current.localDescription,
+        senderId: state.name,
+      });
+    };
+    sendOffer();
+  }, []);
 
   useEffect(() => {
     joinCall();
