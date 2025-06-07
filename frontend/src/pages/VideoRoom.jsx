@@ -7,9 +7,9 @@ export default function VideoRoom() {
   const [messages, setMessages] = useState({});
   const [inputMessage, setInputMessage] = useState("");
   const socket = useRef(null);
-  const peerConnectionRef = useRef(null);
+  const peerConnections = useRef({});
 
-  const joinCall = () => {
+  const joinCall = async () => {
     socket.current = io("http://localhost:8000");
     socket.current.emit("join-call", state.roomId);
 
@@ -32,81 +32,133 @@ export default function VideoRoom() {
           : [{ sender, content }],
       }));
     });
+
+    window.localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
   };
 
-  //offer creation
+  //offer logic
   useEffect(() => {
-    peerConnectionRef.current = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+    const handleOfferRequest = async ({ targetId }) => {
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
 
-    peerConnectionRef.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.current.emit("ice-candidate", {
-          roomId: state.roomId,
-          candidate: event.candidate,
-          senderId: state.name,
-        });
-      }
-    };
-    const sendOffer = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      stream.getTracks().forEach((track) => {
-        peerConnectionRef.current.addTrack(track, stream);
-      });
-      const offer = await peerConnectionRef.current.createOffer();
-      peerConnectionRef.current.setLocalDescription(offer);
+      peerConnections.current[targetId] = pc;
 
-      socket.current.emit("offer", {
-        roomId: state.roomId,
-        offer: peerConnectionRef.current.localDescription,
-        senderId: state.name,
-      });
-    };
-    sendOffer();
-  }, []);
-  //answer  creation
-  useEffect(() => {
-    socket.on("offer", (offer, senderId) => {
-      if (!peerConnectionRef.current) {
-        peerConnectionRef.current = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-        });
-      }
-      peerConnectionRef.current.onicecandidate = (event) => {
+      pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.current.emit("ice-candidate", {
-            roomId: state.roomId,
+            targetId,
             candidate: event.candidate,
-            senderId: state.name,
+            senderId: socket.current.id,
           });
         }
       };
 
-      const sendAnswer = async () => {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        peerConnectionRef.current.setRemoteDescription(offer);
-        stream.getTracks().forEach((track) => {
-          peerConnectionRef.current.addTrack(track, stream);
-        });
+      const stream = window.localStream;
 
-        const answer = await peerConnectionRef.current.createAnswer();
-        peerConnectionRef.current.setLocalDescription(answer);
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
 
-        socket.current.emit("answer", {
-          roomId: state.roomId,
-          answer: peerConnectionRef.current.localDescription,
-          senderId: senderId,
-        });
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      socket.current.emit("offer", {
+        offer: pc.localDescription,
+        senderId: socket.current.id,
+        targetId,
+      });
+    };
+
+    socket.current.on("offer-request", handleOfferRequest);
+
+    return () => {
+      socket.current.off("offer-request", handleOfferRequest);
+      Object.values(peerConnections.current).forEach((pc) => pc.close());
+      peerConnections.current = {};
+    };
+  }, []);
+
+  //answer  logic
+  useEffect(() => {
+    const handleAnswer = async (offer, senderId) => {
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+      peerConnections.current[senderId] = pc;
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.current.emit("ice-candidate", {
+            targetId: senderId,
+            candidate: event.candidate,
+            senderId: socket.current.id,
+          });
+        }
       };
-      sendAnswer();
-    });
+
+      const stream = window.localStream;
+      await pc.setRemoteDescription(offer);
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socket.current.emit("answer", {
+        targetId: senderId,
+        answer: pc.localDescription,
+        senderId: socket.current.id,
+      });
+    };
+
+    socket.current.on("receive-offer", handleAnswer);
+    return () => {
+      socket.current.off("receive-offer", handleAnswer);
+      Object.values(peerConnections.current).forEach((pc) => pc.close());
+      peerConnections.current = {};
+    };
+  }, []);
+
+  //receive answer
+  useEffect(() => {
+    const handleReceiveAnswer = async ({ answer, senderId }) => {
+      const pc = peerConnections.current[senderId];
+      await pc.setRemoteDescription(answer);
+      if (pc) {
+        await pc.setRemoteDescription(answer);
+      } else {
+        console.error("No peer connection found for answer from:", senderId);
+      }
+    };
+    socket.current.on("receive-answer", handleReceiveAnswer);
+
+    return () => {
+      socket.current.off("receive-answer", handleReceiveAnswer);
+    };
+  }, []);
+
+  //handle-ice-candidates
+  useEffect(() => {
+    const handleIceCandidates = async ({ candidate, senderId }) => {
+      const pc = peerConnections.current[senderId];
+      if (pc && candidate) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("Failed to add ICE candidate", err);
+        }
+      }
+    };
+    socket.current.on("ice-candidate", handleIceCandidates);
+    return () => {
+      socket.current.off("ice-candidate", handleIceCandidates);
+    };
   }, []);
 
   useEffect(() => {

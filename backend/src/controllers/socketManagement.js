@@ -41,18 +41,18 @@ export const connectToSocket = (server) => {
     });
 
     //signaling channels
-    socket.on("offer", ({ roomId, offer, senderId }) => {
+    socket.on("offer", ({ offer, senderId, targetId }) => {
       console.log("offer : " + offer);
-      socket.to(roomId).emit("offer", { offer, senderId });
+      socket.to(targetId).emit("receive-offer", { offer, senderId });
     });
 
-    socket.on("answer", ({ roomId, answer, senderId }) => {
+    socket.on("answer", ({ answer, senderId, targetId }) => {
       console.log("answer : " + answer);
-      socket.to(roomId).emit("answer", { answer, senderId });
+      socket.to(targetId).emit("receive-answer", { answer, senderId });
     });
 
-    socket.on("ice-candidate", ({ roomId, candidate, senderId }) => {
-      socket.to(roomId).emit("ice-candidate", { candidate, senderId });
+    socket.on("ice-candidate", ({ candidate, senderId, targetId }) => {
+      socket.to(targetId).emit("ice-candidate", { candidate, senderId });
     });
 
     //handle disconnection
