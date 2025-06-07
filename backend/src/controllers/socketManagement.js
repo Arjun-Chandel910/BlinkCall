@@ -16,11 +16,12 @@ export const connectToSocket = (server) => {
 
     //join call
     socket.on("join-call", (roomId) => {
-      const existingPeers = io.sockets.adapter.rooms.get(roomId);
+      const existingPeers = io.sockets.adapter.rooms.get(roomId) || [];
+      console.log("ep = " + existingPeers);
 
-      existingPeers.forEach((peerId) => {
+      for (let peerId of existingPeers) {
         io.to(peerId).emit("offer-request", { targetId: socket.id });
-      });
+      }
 
       console.log("join-call : " + roomId);
       socket.join(roomId); // client joins a room.

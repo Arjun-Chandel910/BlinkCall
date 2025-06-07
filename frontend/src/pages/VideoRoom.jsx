@@ -39,6 +39,14 @@ export default function VideoRoom() {
     });
   };
 
+  useEffect(() => {
+    joinCall();
+    return () => {
+      if (socket.current) {
+        socket.current.disconnect();
+      }
+    };
+  }, []);
   //offer logic
   useEffect(() => {
     const handleOfferRequest = async ({ targetId }) => {
@@ -158,15 +166,6 @@ export default function VideoRoom() {
     socket.current.on("ice-candidate", handleIceCandidates);
     return () => {
       socket.current.off("ice-candidate", handleIceCandidates);
-    };
-  }, []);
-
-  useEffect(() => {
-    joinCall();
-    return () => {
-      if (socket.current) {
-        socket.current.disconnect();
-      }
     };
   }, []);
 
