@@ -1,11 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
-
+import VideocamIcon from "@mui/icons-material/Videocam";
+import VideocamOffIcon from "@mui/icons-material/VideocamOff";
+import MicIcon from "@mui/icons-material/Mic";
+import MicOffIcon from "@mui/icons-material/MicOff";
 export default function VideoRoom() {
   const { state } = useLocation();
   const [messages, setMessages] = useState({});
   const [inputMessage, setInputMessage] = useState("");
+  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isAudioOn, setIsAudioOn] = useState(true);
+  const localStreamRef = useRef(null);
+  const localVideoRef = useRef(null);
   const socket = useRef(null);
   const peerConnections = useRef({});
 
@@ -33,10 +40,13 @@ export default function VideoRoom() {
       }));
     });
 
-    window.localStream = await navigator.mediaDevices.getUserMedia({
+    localStreamRef.current = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
   };
 
   useEffect(() => {
@@ -47,7 +57,8 @@ export default function VideoRoom() {
       }
     };
   }, []);
-  //offer logic
+
+  // Offer logic
   useEffect(() => {
     const handleOfferRequest = async ({ targetId }) => {
       const pc = new RTCPeerConnection({
@@ -66,8 +77,7 @@ export default function VideoRoom() {
         }
       };
 
-      const stream = window.localStream;
-
+      const stream = localStreamRef.current;
       stream.getTracks().forEach((track) => {
         pc.addTrack(track, stream);
       });
@@ -91,9 +101,9 @@ export default function VideoRoom() {
     };
   }, []);
 
-  //answer  logic
+  //receive offer and send answer
   useEffect(() => {
-    const handleAnswer = async (offer, senderId) => {
+    const handleAnswer = async ({ offer, senderId }) => {
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
@@ -109,7 +119,11 @@ export default function VideoRoom() {
         }
       };
 
-      const stream = window.localStream;
+      const stream = localStreamRef.current;
+      if (!stream) {
+        console.error("Stream not available");
+        return;
+      }
       await pc.setRemoteDescription(offer);
       stream.getTracks().forEach((track) => {
         pc.addTrack(track, stream);
@@ -133,11 +147,10 @@ export default function VideoRoom() {
     };
   }, []);
 
-  //receive answer
+  // Receive answer
   useEffect(() => {
     const handleReceiveAnswer = async ({ answer, senderId }) => {
       const pc = peerConnections.current[senderId];
-      await pc.setRemoteDescription(answer);
       if (pc) {
         await pc.setRemoteDescription(answer);
       } else {
@@ -151,7 +164,7 @@ export default function VideoRoom() {
     };
   }, []);
 
-  //handle-ice-candidates
+  // Handle ICE candidates
   useEffect(() => {
     const handleIceCandidates = async ({ candidate, senderId }) => {
       const pc = peerConnections.current[senderId];
@@ -169,8 +182,19 @@ export default function VideoRoom() {
     };
   }, []);
 
+  // Toggle video/audio tracks & update video element srcObject
+  useEffect(() => {
+    if (localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+
+      if (videoTrack) videoTrack.enabled = isVideoOn;
+      if (audioTrack) audioTrack.enabled = isAudioOn;
+    }
+  }, [isVideoOn, isAudioOn]);
+
   const sendMessage = () => {
-    if (inputMessage.trim() === "") return; // No sending empty
+    if (inputMessage.trim() === "") return;
     socket.current.emit("message", state.roomId, state.name, inputMessage);
     setInputMessage("");
   };
@@ -179,9 +203,35 @@ export default function VideoRoom() {
     <div className="flex flex-col md:flex-row h-screen bg-black text-white">
       {/* Left: Video Section */}
       <div className="md:w-2/3 w-full p-4 border-b md:border-b-0 md:border-r border-gray-800 flex flex-col items-center justify-center">
-        {/* Video Elements Go Here */}
-        <div className="w-full h-96 md:h-full bg-gray-900 rounded-lg flex items-center justify-center text-gray-500">
-          Video Area
+        {/* Video Wrapper */}
+        <div className="w-full h-96 md:h-full bg-gray-900 rounded-lg flex flex-col items-center justify-center relative shadow-lg">
+          <video
+            ref={localVideoRef}
+            muted
+            autoPlay
+            playsInline
+            className="rounded-lg shadow-2xl max-w-full max-h-full object-cover"
+            style={{ width: "100%", height: "100%" }}
+          />
+          {/* Controls */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 p-3 rounded-xl">
+            <button
+              onClick={() => setIsVideoOn((prev) => !prev)}
+              className={`px-4 py-2 rounded ${
+                isVideoOn ? "bg-green-600" : "bg-red-600"
+              } font-semibold transition`}
+            >
+              {isVideoOn ? <VideocamIcon /> : <VideocamOffIcon />}
+            </button>
+            <button
+              onClick={() => setIsAudioOn((prev) => !prev)}
+              className={`px-4 py-2 rounded ${
+                isAudioOn ? "bg-green-600" : "bg-red-600"
+              } font-semibold transition`}
+            >
+              {isAudioOn ? <MicIcon /> : <MicOffIcon />}
+            </button>
+          </div>
         </div>
       </div>
 
