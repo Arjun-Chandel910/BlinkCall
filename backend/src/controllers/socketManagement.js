@@ -16,15 +16,16 @@ export const connectToSocket = (server) => {
 
     //join call
     socket.on("join-call", (roomId) => {
-      const existingPeers = io.sockets.adapter.rooms.get(roomId) || [];
-      console.log("ep = " + existingPeers);
-
-      for (let peerId of existingPeers) {
-        io.to(peerId).emit("offer-request", { targetId: socket.id });
+      socket.join(roomId);
+      const existingPeers = io.sockets.adapter.rooms.get(roomId);
+      if (existingPeers && existingPeers.size > 1) {
+        for (let peerId of existingPeers) {
+          if (peerId !== socket.id) {
+            io.to(peerId).emit("offer-request", { targetId: socket.id });
+          }
+        }
       }
 
-      console.log("join-call : " + roomId);
-      socket.join(roomId); // client joins a room.
       socket.to(roomId).emit("user-joined", socket.id); // notifies everyone in the room that the client has joined.
 
       if (messages[roomId]) {
@@ -43,16 +44,17 @@ export const connectToSocket = (server) => {
 
     //signaling channels
     socket.on("offer", ({ offer, senderId, targetId }) => {
-      console.log("offer : " + offer);
+      console.log("offer : from  ", senderId);
       socket.to(targetId).emit("receive-offer", { offer, senderId });
     });
 
     socket.on("answer", ({ answer, senderId, targetId }) => {
-      console.log("answer : " + answer);
+      console.log("answer from : ", senderId);
       socket.to(targetId).emit("receive-answer", { answer, senderId });
     });
 
     socket.on("ice-candidate", ({ candidate, senderId, targetId }) => {
+      console.log("candidate from ", senderId);
       socket.to(targetId).emit("ice-candidate", { candidate, senderId });
     });
 

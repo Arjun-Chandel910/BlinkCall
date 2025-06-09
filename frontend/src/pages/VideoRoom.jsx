@@ -5,16 +5,21 @@ import VideocamIcon from "@mui/icons-material/Videocam";
 import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
+import MessageIcon from "@mui/icons-material/Message";
+
 export default function VideoRoom() {
   const { state } = useLocation();
+
   const [messages, setMessages] = useState({});
   const [inputMessage, setInputMessage] = useState("");
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
+  const [isChatVisible, setIsChatVisible] = useState(false);
   const localStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const socket = useRef(null);
   const peerConnections = useRef({});
+  const settingRemoteAnswer = useRef({});
 
   const joinCall = async () => {
     socket.current = io("http://localhost:8000");
@@ -44,43 +49,36 @@ export default function VideoRoom() {
       video: true,
       audio: true,
     });
+
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = localStreamRef.current;
     }
-  };
 
-  useEffect(() => {
-    joinCall();
-    return () => {
-      if (socket.current) {
-        socket.current.disconnect();
-      }
-    };
-  }, []);
-
-  // Offer logic
-  useEffect(() => {
-    const handleOfferRequest = async ({ targetId }) => {
+    const createPeerConnection = (id) => {
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
-      peerConnections.current[targetId] = pc;
-
       pc.onicecandidate = (event) => {
         if (event.candidate) {
           socket.current.emit("ice-candidate", {
-            targetId,
+            targetId: id,
             candidate: event.candidate,
             senderId: socket.current.id,
           });
         }
       };
 
-      const stream = localStreamRef.current;
-      stream.getTracks().forEach((track) => {
-        pc.addTrack(track, stream);
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current);
       });
+
+      peerConnections.current[id] = pc;
+      return pc;
+    };
+
+    socket.current.on("offer-request", async ({ targetId }) => {
+      const pc = createPeerConnection(targetId);
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -90,83 +88,45 @@ export default function VideoRoom() {
         senderId: socket.current.id,
         targetId,
       });
-    };
+    });
 
-    socket.current.on("offer-request", handleOfferRequest);
+    socket.current.on("receive-offer", async ({ offer, senderId }) => {
+      const pc = createPeerConnection(senderId);
 
-    return () => {
-      socket.current.off("offer-request", handleOfferRequest);
-      Object.values(peerConnections.current).forEach((pc) => pc.close());
-      peerConnections.current = {};
-    };
-  }, []);
+      if (pc.signalingState === "stable") {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-  //receive offer and send answer
-  useEffect(() => {
-    const handleAnswer = async ({ offer, senderId }) => {
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      });
-      peerConnections.current[senderId] = pc;
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
 
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.current.emit("ice-candidate", {
-            targetId: senderId,
-            candidate: event.candidate,
-            senderId: socket.current.id,
-          });
-        }
-      };
-
-      const stream = localStreamRef.current;
-      if (!stream) {
-        console.error("Stream not available");
-        return;
-      }
-      await pc.setRemoteDescription(offer);
-      stream.getTracks().forEach((track) => {
-        pc.addTrack(track, stream);
-      });
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      socket.current.emit("answer", {
-        targetId: senderId,
-        answer: pc.localDescription,
-        senderId: socket.current.id,
-      });
-    };
-
-    socket.current.on("receive-offer", handleAnswer);
-    return () => {
-      socket.current.off("receive-offer", handleAnswer);
-      Object.values(peerConnections.current).forEach((pc) => pc.close());
-      peerConnections.current = {};
-    };
-  }, []);
-
-  // Receive answer
-  useEffect(() => {
-    const handleReceiveAnswer = async ({ answer, senderId }) => {
-      const pc = peerConnections.current[senderId];
-      if (pc) {
-        await pc.setRemoteDescription(answer);
+        socket.current.emit("answer", {
+          targetId: senderId,
+          answer: pc.localDescription,
+          senderId: socket.current.id,
+        });
       } else {
-        console.error("No peer connection found for answer from:", senderId);
+        console.warn(
+          `Cannot set remote offer from ${senderId}. State: ${pc.signalingState}`
+        );
       }
-    };
-    socket.current.on("receive-answer", handleReceiveAnswer);
+    });
 
-    return () => {
-      socket.current.off("receive-answer", handleReceiveAnswer);
-    };
-  }, []);
+    socket.current.on("receive-answer", async ({ answer, senderId }) => {
+      const pc = peerConnections.current[senderId];
+      if (!pc || settingRemoteAnswer.current[senderId]) return;
+      settingRemoteAnswer.current[senderId] = true;
+      try {
+        if (pc.signalingState === "have-local-offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        }
+      } catch (err) {
+        console.error(" Error setting remote description (answer):", err);
+      } finally {
+        settingRemoteAnswer.current[senderId] = false;
+      }
+    });
 
-  // Handle ICE candidates
-  useEffect(() => {
-    const handleIceCandidates = async ({ candidate, senderId }) => {
+    socket.current.on("ice-candidate", async ({ candidate, senderId }) => {
       const pc = peerConnections.current[senderId];
       if (pc && candidate) {
         try {
@@ -175,19 +135,29 @@ export default function VideoRoom() {
           console.error("Failed to add ICE candidate", err);
         }
       }
-    };
-    socket.current.on("ice-candidate", handleIceCandidates);
+    });
+  };
+
+  useEffect(() => {
+    joinCall();
     return () => {
-      socket.current.off("ice-candidate", handleIceCandidates);
+      if (socket.current) {
+        socket.current.disconnect();
+        socket.current = null;
+      }
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      Object.values(peerConnections.current).forEach((pc) => pc.close());
+      peerConnections.current = {};
+      settingRemoteAnswer.current = {};
     };
   }, []);
 
-  // Toggle video/audio tracks & update video element srcObject
   useEffect(() => {
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
-
       if (videoTrack) videoTrack.enabled = isVideoOn;
       if (audioTrack) audioTrack.enabled = isAudioOn;
     }
@@ -200,90 +170,93 @@ export default function VideoRoom() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-black text-white">
-      {/* Left: Video Section */}
-      <div className="md:w-2/3 w-full p-4 border-b md:border-b-0 md:border-r border-gray-800 flex flex-col items-center justify-center">
-        {/* Video Wrapper */}
-        <div className="w-full h-96 md:h-full bg-gray-900 rounded-lg flex flex-col items-center justify-center relative shadow-lg">
-          <video
-            ref={localVideoRef}
-            muted
-            autoPlay
-            playsInline
-            className="rounded-lg shadow-2xl max-w-full max-h-full object-cover"
-            style={{ width: "100%", height: "100%" }}
-          />
-          {/* Controls */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-6 bg-black bg-opacity-60 p-3 rounded-xl">
-            <button
-              onClick={() => setIsVideoOn((prev) => !prev)}
-              className={`px-4 py-2 rounded ${
-                isVideoOn ? "bg-green-600" : "bg-red-600"
-              } font-semibold transition`}
-            >
-              {isVideoOn ? <VideocamIcon /> : <VideocamOffIcon />}
-            </button>
-            <button
-              onClick={() => setIsAudioOn((prev) => !prev)}
-              className={`px-4 py-2 rounded ${
-                isAudioOn ? "bg-green-600" : "bg-red-600"
-              } font-semibold transition`}
-            >
-              {isAudioOn ? <MicIcon /> : <MicOffIcon />}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="flex flex-col md:flex-row h-screen bg-black text-white overflow-hidden">
+      {/* Video Section */}
+      <div
+        className={`flex flex-col flex-1 relative ${isChatVisible ? "md:w-2/3" : "w-full"}`}
+      >
+        <video
+          ref={localVideoRef}
+          muted
+          autoPlay
+          playsInline
+          className="flex-1 object-cover w-full h-full bg-black rounded-none"
+        />
 
-      {/* Right: Chat Section */}
-      <div className="md:w-1/3 w-full flex flex-col p-4">
-        {/* Messages */}
-        <div
-          className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-700"
-          style={{ wordBreak: "break-word" }}
-        >
-          {messages[state.roomId]?.map((el, index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg max-w-full break-words ${
-                el.sender === state.name
-                  ? "bg-blue-600 self-end text-white"
-                  : "bg-gray-700 self-start text-white"
-              }`}
-            >
-              <div className="text-xs font-semibold mb-1 opacity-80">
-                {el.sender}
-              </div>
-              <div className="text-base">{el.content}</div>
-            </div>
-          )) || (
-            <p className="text-gray-500 text-center mt-5">No messages yet</p>
-          )}
-        </div>
-
-        {/* Input Bar */}
-        <form
-          className="flex gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendMessage();
-          }}
-        >
-          <input
-            type="text"
-            className="flex-grow p-4 rounded-xl bg-gray-800 text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            placeholder="Type your message..."
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-          />
+        {/* Controls */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black bg-opacity-60 p-3 rounded-xl z-10 max-w-full">
           <button
-            type="submit"
-            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition"
+            onClick={() => setIsVideoOn((prev) => !prev)}
+            className={`w-12 h-12 flex items-center justify-center rounded-full text-white ${isVideoOn ? "bg-green-600" : "bg-red-600"}`}
           >
-            Send
+            {isVideoOn ? <VideocamIcon /> : <VideocamOffIcon />}
           </button>
-        </form>
+          <button
+            onClick={() => setIsAudioOn((prev) => !prev)}
+            className={`w-12 h-12 flex items-center justify-center rounded-full text-white ${isAudioOn ? "bg-green-600" : "bg-red-600"}`}
+          >
+            {isAudioOn ? <MicIcon /> : <MicOffIcon />}
+          </button>
+          <button
+            onClick={() => setIsChatVisible((prev) => !prev)}
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white"
+          >
+            <MessageIcon />
+          </button>
+        </div>
       </div>
+
+      {/* Chat Section */}
+      {isChatVisible && (
+        <div className="w-full md:w-1/3 flex flex-col bg-gray-950 border-l border-gray-800 shadow-inner">
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+            {messages[state.roomId]?.length > 0 ? (
+              messages[state.roomId].map((el, idx) => (
+                <div
+                  key={idx}
+                  className={`w-fit max-w-[75%] px-5 py-3 rounded-xl shadow-md ${
+                    el.sender === state.name
+                      ? "ml-auto bg-blue-600 text-white rounded-br-none"
+                      : "mr-auto bg-gray-800 text-white rounded-bl-none"
+                  }`}
+                >
+                  <div className="text-xs font-medium opacity-70 mb-1">
+                    {el.sender}
+                  </div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {el.content}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center">No messages yet</p>
+            )}
+          </div>
+
+          {/* Input */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage();
+            }}
+            className="p-4 bg-gray-900 flex gap-3"
+          >
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              placeholder="Type something badass..."
+              className="flex-1 p-3 rounded-xl bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+            <button
+              type="submit"
+              className="px-5 py-3 bg-blue-600 rounded-xl hover:bg-blue-700 text-white font-semibold"
+            >
+              Send
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
