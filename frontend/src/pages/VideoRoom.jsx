@@ -20,6 +20,7 @@ export default function VideoRoom() {
   const socket = useRef(null);
   const peerConnections = useRef({});
   const settingRemoteAnswer = useRef({});
+  const remoteStreamsRef = useRef({});
 
   const joinCall = async () => {
     socket.current = io("http://localhost:8000");
@@ -68,7 +69,13 @@ export default function VideoRoom() {
           });
         }
       };
-
+      pc.ontrack = (event) => {
+        const stream = event.streams[0];
+        if (!remoteStreamsRef.current[id]) {
+          remoteStreamsRef.current[id] = new MediaStream();
+        }
+        remoteStreamsRef.current[id] = stream;
+      };
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current);
       });
@@ -168,6 +175,8 @@ export default function VideoRoom() {
     socket.current.emit("message", state.roomId, state.name, inputMessage);
     setInputMessage("");
   };
+
+  // main body
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-black text-white overflow-hidden">
