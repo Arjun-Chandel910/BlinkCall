@@ -1,10 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
-const httpStatus = require("http-status");
-
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
@@ -19,32 +15,22 @@ export const register = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res
-        .status(httpStatus.FOUND)
-        .json({ message: "User already exists." });
+      return res.status(302).json({ message: "User already exists." }); // 302 = FOUND
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
+    const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
-    const thisUser = await User.findOne({ email });
 
     const token = jwt.sign(
-      { id: thisUser._id, email },
+      { id: newUser._id, email },
       process.env.JWT_SECRET_KEY
     );
 
-    return res
-      .status(httpStatus.CREATED)
-      .json({ token, message: "User Created!" });
+    return res.status(201).json({ token, message: "User Created!" }); // 201 = CREATED
   } catch (e) {
-    res.json({ message: "Something went wrong: " + e });
+    res.status(500).json({ message: "Something went wrong: " + e });
   }
 };
 
@@ -58,17 +44,12 @@ export const login = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-      return res
-        .status(httpStatus.NOT_FOUND)
-        .json({ message: "User does not exist." });
+      return res.status(404).json({ message: "User does not exist." });
     }
 
     const isPassCorrect = await bcrypt.compare(password, existingUser.password);
-
     if (!isPassCorrect) {
-      return res
-        .status(httpStatus.UNAUTHORIZED)
-        .json({ message: "Invalid credentials!" });
+      return res.status(401).json({ message: "Invalid credentials!" });
     }
 
     const token = jwt.sign(
@@ -76,8 +57,8 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET_KEY
     );
 
-    res.status(httpStatus.OK).json({ token, message: "User Logged in!" });
+    res.status(200).json({ token, message: "User Logged in!" });
   } catch (e) {
-    res.json({ message: "Something went wrong: " + e });
+    res.status(500).json({ message: "Something went wrong: " + e });
   }
 };
