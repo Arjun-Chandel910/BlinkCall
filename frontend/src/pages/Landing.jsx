@@ -36,8 +36,13 @@ export default function LandingPage() {
             <h1>BlinkCall</h1>
           </div>
           <div className="navlist">
-            <h3>Join as Guest</h3>
-            <h3>Register</h3>
+            <h3
+              onClick={() => {
+                nagivate("/auth");
+              }}
+            >
+              Register
+            </h3>
             {authToken() ? (
               <button
                 onClick={() => {
