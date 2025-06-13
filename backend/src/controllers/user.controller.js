@@ -1,7 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import httpStatus from "http-status"; // ✅ Changed here
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const httpStatus = require("http-status");
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
