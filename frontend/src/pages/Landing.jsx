@@ -38,7 +38,7 @@ export default function LandingPage() {
           <div className="navlist">
             <h3
               onClick={() => {
-                nagivate("/auth");
+                navigate("/auth");
               }}
               className="pointer"
             >
