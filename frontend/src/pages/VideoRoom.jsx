@@ -158,6 +158,7 @@ export default function VideoRoom() {
         });
         delete remoteStreamsRef.current[id];
       }
+      alert(id, " left. ");
     });
   };
 
@@ -199,16 +200,20 @@ export default function VideoRoom() {
     <div className="flex flex-col md:flex-row h-screen bg-black text-white overflow-hidden">
       {/* Video Section */}
       <div
-        className={`flex flex-col flex-1 relative ${isChatVisible ? "md:w-2/3" : "w-full"}`}
+        className={`  bg-gray-900 flex flex-col flex-1 relative ${isChatVisible ? "md:w-2/3" : "w-full"}`}
       >
-        <video
-          ref={localVideoRef}
-          muted
-          autoPlay
-          playsInline
-          className="flex-1 object-cover w-full h-full bg-black rounded-none"
-        />
-
+        <div className="relative w-60 h-60  mt-4 ml-4  ">
+          <video
+            ref={localVideoRef}
+            muted
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover rounded-md bg-black shadow"
+          />
+          <p className="absolute bottom-1 left-1/2 -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
+            {state.name}
+          </p>
+        </div>
         {/* Controls */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black bg-opacity-60 p-3 rounded-xl z-10 max-w-full">
           <button
