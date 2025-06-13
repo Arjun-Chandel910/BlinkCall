@@ -15,7 +15,14 @@ const port = process.env.PORT || 8000;
 app.use(express.json({ limit: "40kb" }));
 app.use(express.urlencoded({ limit: "40kb", extended: true }));
 
-app.use(cors());
+const corsOptions = {
+  origin: "https://blinkcall-bflc.onrender.com",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use("/api/v1/users", userRoute);
 
