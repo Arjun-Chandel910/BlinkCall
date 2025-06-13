@@ -1,13 +1,16 @@
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import LandingPage from "./pages/Landing";
-import Authentication from "./pages/Authentication";
+import { lazy, Suspense } from "react";
 import { ToastContainer, Bounce } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
-import VideoMeet from "./pages/VideoMeet";
-import MeetingCodePage from "./pages/MeetingCodePage";
-import VideoRoom from "./pages/VideoRoom";
 import ClickSpark from "./utils/ClickSpark";
+
+const LandingPage = lazy(() => import("./pages/Landing"));
+const Authentication = lazy(() => import("./pages/Authentication"));
+const VideoMeet = lazy(() => import("./pages/VideoMeet"));
+const VideoRoom = lazy(() => import("./pages/VideoRoom"));
+const MeetingCodePage = lazy(() => import("./pages/MeetingCodePage"));
+
 function App() {
   return (
     <div>
@@ -21,7 +24,7 @@ function App() {
         <Router>
           <ToastContainer
             position="top-center"
-            autoClose={5000}
+            autoClose={2000}
             hideProgressBar={false}
             newestOnTop={false}
             closeOnClick={false}
@@ -34,13 +37,19 @@ function App() {
           />
 
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="auth" element={<Authentication />} />
-              <Route path="/room/:url/prejoin" element={<VideoMeet />} />
-              <Route path="/room/:url" element={<VideoRoom />} />
-              <Route path="/roomcode" element={<MeetingCodePage />} />
-            </Routes>
+            <Suspense
+              fallback={
+                <div className="text-white text-center mt-10">Loading...</div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/auth" element={<Authentication />} />
+                <Route path="/room/:url/prejoin" element={<VideoMeet />} />
+                <Route path="/room/:url" element={<VideoRoom />} />
+                <Route path="/roomcode" element={<MeetingCodePage />} />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </Router>
       </ClickSpark>
