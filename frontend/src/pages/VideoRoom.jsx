@@ -27,7 +27,7 @@ export default function VideoRoom() {
   const [version, setVersion] = useState(0);
 
   const joinCall = async () => {
-    socket.current = io("http://localhost:8000");
+    socket.current = io("https://blinkcall.onrender.com");
     socket.current.emit("join-call", state.roomId);
 
     socket.current.on("user-joined", (id) => {

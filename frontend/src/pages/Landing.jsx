@@ -40,6 +40,7 @@ export default function LandingPage() {
               onClick={() => {
                 nagivate("/auth");
               }}
+              className="pointer"
             >
               Register
             </h3>
