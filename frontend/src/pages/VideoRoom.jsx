@@ -75,6 +75,8 @@ export default function VideoRoom() {
           remoteStreamsRef.current[id] = new MediaStream();
         }
         remoteStreamsRef.current[id] = stream;
+
+        console.log(state.name, remoteStreamsRef.current);
       };
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current);
@@ -147,6 +149,7 @@ export default function VideoRoom() {
 
   useEffect(() => {
     joinCall();
+
     return () => {
       if (socket.current) {
         socket.current.disconnect();

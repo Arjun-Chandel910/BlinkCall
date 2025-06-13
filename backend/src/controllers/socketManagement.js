@@ -60,6 +60,7 @@ export const connectToSocket = (server) => {
 
     //handle disconnection
     socket.on("disconnect", () => {
+      socket.to(roomId).emit("user-left", { id: socket.id }); //notify all in the room that a user has left
       const rooms = socket.rooms; //  gives all rooms the socket is in
       rooms.forEach((roomId) => {
         if (roomId === socket.id) return; // skip the personal room that is created after that socket's socket.id
