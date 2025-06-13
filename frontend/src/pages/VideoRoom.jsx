@@ -70,11 +70,12 @@ export default function VideoRoom() {
         }
       };
       pc.ontrack = (event) => {
-        const stream = event.streams[0];
         if (!remoteStreamsRef.current[id]) {
           remoteStreamsRef.current[id] = new MediaStream();
         }
-        remoteStreamsRef.current[id] = stream;
+        event.streams[0].getTracks().forEach((track) => {
+          remoteStreamsRef.current[id].addTrack(track);
+        });
 
         console.log(state.name, remoteStreamsRef.current);
       };
@@ -143,6 +144,19 @@ export default function VideoRoom() {
         } catch (err) {
           console.error("Failed to add ICE candidate", err);
         }
+      }
+    });
+
+    socket.current.on("user-left", ({ id }) => {
+      if (peerConnections.current[id]) {
+        peerConnections.current[id].close();
+        delete peerConnections.current[id];
+      }
+      if (remoteStreamsRef.current[id]) {
+        remoteStreamsRef.current[id].getTracks().forEach((track) => {
+          track.stop();
+        });
+        delete remoteStreamsRef.current[id];
       }
     });
   };

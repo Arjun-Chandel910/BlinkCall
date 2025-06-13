@@ -17,6 +17,7 @@ export const connectToSocket = (server) => {
     //join call
     socket.on("join-call", (roomId) => {
       socket.join(roomId);
+      socket.roomId = roomId;
       const existingPeers = io.sockets.adapter.rooms.get(roomId);
       if (existingPeers && existingPeers.size > 1) {
         for (let peerId of existingPeers) {
@@ -60,6 +61,7 @@ export const connectToSocket = (server) => {
 
     //handle disconnection
     socket.on("disconnect", () => {
+      const roomId = socket.roomId;
       socket.to(roomId).emit("user-left", { id: socket.id }); //notify all in the room that a user has left
       const rooms = socket.rooms; //  gives all rooms the socket is in
       rooms.forEach((roomId) => {
