@@ -21,6 +21,7 @@ export default function VideoRoom() {
   const peerConnections = useRef({});
   const settingRemoteAnswer = useRef({});
   const remoteStreamsRef = useRef({});
+  const [version, setVersion] = useState(0);
 
   const joinCall = async () => {
     socket.current = io("http://localhost:8000");
@@ -75,6 +76,7 @@ export default function VideoRoom() {
         }
         event.streams[0].getTracks().forEach((track) => {
           remoteStreamsRef.current[id].addTrack(track);
+          setVersion((v) => v + 1);
         });
 
         console.log(state.name, remoteStreamsRef.current);
@@ -157,6 +159,7 @@ export default function VideoRoom() {
           track.stop();
         });
         delete remoteStreamsRef.current[id];
+        setVersion((v) => v - 1);
       }
       alert(id, " left. ");
     });
@@ -200,12 +203,11 @@ export default function VideoRoom() {
     <div className="flex flex-col md:flex-row h-screen bg-black text-white overflow-hidden">
       {/* Video Section */}
       <div
-        className={`  bg-gray-900 flex flex-col flex-1 relative ${isChatVisible ? "md:w-2/3" : "w-full"}`}
+        className={`  bg-gray-900 flex flex-row flex-wrap flex-1 relative ${isChatVisible ? "md:w-2/3" : "w-full"}`}
       >
         <div className="relative w-60 h-60  mt-4 ml-4  ">
           <video
             ref={localVideoRef}
-            muted
             autoPlay
             playsInline
             className="w-full h-full object-cover rounded-md bg-black shadow"
@@ -214,6 +216,27 @@ export default function VideoRoom() {
             {state.name}
           </p>
         </div>
+
+        {Object.entries(remoteStreamsRef.current).map(([id, stream]) => {
+          return (
+            <div className="relative w-60 h-60  mt-4 ml-4  " key={id}>
+              <video
+                ref={(el) => {
+                  if (el && stream) {
+                    el.srcObject = stream;
+                  }
+                }}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover rounded-md bg-black shadow"
+              />
+              <p className="absolute bottom-1 left-1/2 -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
+                {id}
+              </p>
+            </div>
+          );
+        })}
+
         {/* Controls */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black bg-opacity-60 p-3 rounded-xl z-10 max-w-full">
           <button
