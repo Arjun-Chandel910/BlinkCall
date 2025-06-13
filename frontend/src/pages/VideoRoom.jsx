@@ -7,6 +7,7 @@ import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
 import MessageIcon from "@mui/icons-material/Message";
 import LogoutIcon from "@mui/icons-material/Logout";
+import Particles from "../utils/Particles";
 
 export default function VideoRoom() {
   const navigate = useNavigate();
@@ -202,144 +203,153 @@ export default function VideoRoom() {
   // main body
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-black text-white overflow-hidden">
-      {/* video Section */}
-      <div
-        className={`bg-gray-900 flex flex-wrap flex-1 relative ${
-          isChatVisible ? "md:w-2/3" : "w-full"
-        }`}
-      >
-        {/* local Video */}
-        <div className="relative w-[400px] h-[300px] m-4">
-          <video
-            ref={localVideoRef}
-            muted
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover rounded-xl bg-gray-800 shadow-lg"
-          />
-          <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-lg bg-black bg-opacity-60 px-3 py-1 rounded-lg">
-            {state.name}
-          </p>
-        </div>
+    <div className="relative w-full h-[600px] bg-[#111] overflow-hidden">
+      {/* Particles Background */}
+      <div className="absolute inset-0 z-0">
+        <Particles
+          particleColors={["#ffffff", "#ffffff"]}
+          particleCount={400}
+          particleSpread={10}
+          speed={0.1}
+          particleBaseSize={100}
+          moveParticlesOnHover={true}
+          alphaParticles={false}
+          disableRotation={false}
+        />
+      </div>
 
-        {/* Remote Videos */}
-        {Object.entries(remoteStreamsRef.current).map(([id, stream]) => (
-          <div className="relative w-[400px] h-[300px] m-4" key={id}>
+      {/* Main Content */}
+      <div className="relative z-10 flex h-full">
+        {/* Video Section */}
+        <div
+          className={`flex flex-wrap p-4 ${isChatVisible ? "w-2/3" : "w-full"}`}
+        >
+          {/* Local Video */}
+          <div className="relative w-[400px] h-[300px] m-2">
             <video
-              ref={(el) => el && (el.srcObject = stream)}
+              ref={localVideoRef}
+              muted
               autoPlay
               playsInline
               className="w-full h-full object-cover rounded-xl bg-gray-800 shadow-lg"
             />
-            <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-lg bg-black bg-opacity-60 px-3 py-1 rounded-lg">
-              {id}
+            <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-lg italic bg-opacity-60 px-3 py-1 rounded-lg">
+              {"You"}
             </p>
           </div>
-        ))}
 
-        {/* Controls */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black bg-opacity-70 px-5 py-3 rounded-full shadow-md z-10">
-          {/* Video Toggle */}
-          <button
-            onClick={() => setIsVideoOn((prev) => !prev)}
-            className={`w-10 h-10 flex items-center justify-center rounded-full text-white ${
-              isVideoOn ? "bg-green-600" : "bg-red-600"
-            }`}
-          >
-            {isVideoOn ? (
-              <VideocamIcon fontSize="small" />
-            ) : (
-              <VideocamOffIcon fontSize="small" />
-            )}
-          </button>
-
-          {/* Audio Toggle */}
-          <button
-            onClick={() => setIsAudioOn((prev) => !prev)}
-            className={`w-10 h-10 flex items-center justify-center rounded-full text-white ${
-              isAudioOn ? "bg-green-600" : "bg-red-600"
-            }`}
-          >
-            {isAudioOn ? (
-              <MicIcon fontSize="small" />
-            ) : (
-              <MicOffIcon fontSize="small" />
-            )}
-          </button>
-
-          {/* Chat Toggle */}
-          <button
-            onClick={() => setIsChatVisible((prev) => !prev)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white"
-          >
-            <MessageIcon fontSize="small" />
-          </button>
-
-          {/* Disconnect (Still styling only) */}
-          <button className="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 text-white">
-            <LogoutIcon
-              fontSize="small"
-              onClick={() => {
-                navigate("/");
-                alert("call ended successfully");
-              }}
-            />
-          </button>
+          {/* Remote Videos */}
+          {Object.entries(remoteStreamsRef.current).map(([id, stream]) => (
+            <div className="relative w-[400px] h-[300px] m-2" key={id}>
+              <video
+                ref={(el) => el && (el.srcObject = stream)}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover rounded-xl bg-gray-800 shadow-lg"
+              />
+              <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-lg bg-black bg-opacity-60 px-3 py-1 rounded-lg">
+                {id}
+              </p>
+            </div>
+          ))}
         </div>
+
+        {/* Chat Section */}
+        {isChatVisible && (
+          <div className="w-1/3 h-full flex flex-col bg-gray-950 bg-opacity-90 border-l border-gray-800 shadow-inner z-20">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+              {messages[state.roomId]?.length > 0 ? (
+                messages[state.roomId].map((el, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-fit max-w-[75%] px-5 py-3 rounded-xl shadow-md ${
+                      el.sender === state.name
+                        ? "ml-auto bg-blue-600 text-white rounded-br-none"
+                        : "mr-auto bg-gray-800 text-white rounded-bl-none"
+                    }`}
+                  >
+                    <div className="text-xs font-medium opacity-70 mb-1">
+                      {el.sender}
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap">
+                      {el.content}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center">No messages yet</p>
+              )}
+            </div>
+
+            {/* Input */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                sendMessage();
+              }}
+              className="p-4 bg-gray-900 flex gap-3"
+            >
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Type something badass..."
+                className="flex-1 p-3 rounded-xl bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+              <button
+                type="submit"
+                className="px-5 py-3 bg-blue-600 rounded-xl hover:bg-blue-700 text-white font-semibold"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
-      {/* Chat Section */}
-      {isChatVisible && (
-        <div className="w-full md:w-1/3 flex flex-col bg-gray-950 border-l border-gray-800 shadow-inner transition-all duration-300 ease-in-out">
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-            {messages[state.roomId]?.length > 0 ? (
-              messages[state.roomId].map((el, idx) => (
-                <div
-                  key={idx}
-                  className={`w-fit max-w-[75%] px-5 py-3 rounded-xl shadow-md ${
-                    el.sender === state.name
-                      ? "ml-auto bg-blue-600 text-white rounded-br-none"
-                      : "mr-auto bg-gray-800 text-white rounded-bl-none"
-                  }`}
-                >
-                  <div className="text-xs font-medium opacity-70 mb-1">
-                    {el.sender}
-                  </div>
-                  <div className="text-sm whitespace-pre-wrap">
-                    {el.content}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center">No messages yet</p>
-            )}
-          </div>
-
-          {/* Chat Input */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendMessage();
+      {/* Control Bar */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-black bg-opacity-70 px-5 py-3 rounded-full shadow-md z-30">
+        <button
+          onClick={() => setIsVideoOn((prev) => !prev)}
+          className={`w-10 h-10 flex items-center justify-center rounded-full text-white ${
+            isVideoOn ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
+          {isVideoOn ? (
+            <VideocamIcon fontSize="small" />
+          ) : (
+            <VideocamOffIcon fontSize="small" />
+          )}
+        </button>
+        <button
+          onClick={() => setIsAudioOn((prev) => !prev)}
+          className={`w-10 h-10 flex items-center justify-center rounded-full text-white ${
+            isAudioOn ? "bg-green-600" : "bg-red-600"
+          }`}
+        >
+          {isAudioOn ? (
+            <MicIcon fontSize="small" />
+          ) : (
+            <MicOffIcon fontSize="small" />
+          )}
+        </button>
+        <button
+          onClick={() => setIsChatVisible((prev) => !prev)}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 text-white"
+        >
+          <MessageIcon fontSize="small" />
+        </button>
+        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-red-600 text-white">
+          <LogoutIcon
+            fontSize="small"
+            onClick={() => {
+              navigate("/");
+              alert("call ended successfully");
             }}
-            className="p-4 bg-gray-900 flex gap-3"
-          >
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Type something badass..."
-              className="flex-1 p-3 rounded-xl bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-            <button
-              type="submit"
-              className="px-5 py-3 bg-blue-600 rounded-xl hover:bg-blue-700 text-white font-semibold"
-            >
-              Send
-            </button>
-          </form>
-        </div>
-      )}
+          />
+        </button>
+      </div>
     </div>
   );
 }
