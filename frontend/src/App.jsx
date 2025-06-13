@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import { ToastContainer, Bounce } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
 import ClickSpark from "./utils/ClickSpark";
+import AuthGaurd from "./utils/AuthGaurd";
 
 const LandingPage = lazy(() => import("./pages/Landing"));
 const Authentication = lazy(() => import("./pages/Authentication"));
@@ -45,9 +46,11 @@ function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/auth" element={<Authentication />} />
-                <Route path="/room/:url/prejoin" element={<VideoMeet />} />
-                <Route path="/room/:url" element={<VideoRoom />} />
-                <Route path="/roomcode" element={<MeetingCodePage />} />
+                <Route element={<AuthGaurd />}>
+                  <Route path="/room/:url/prejoin" element={<VideoMeet />} />
+                  <Route path="/room/:url" element={<VideoRoom />} />
+                  <Route path="/roomcode" element={<MeetingCodePage />} />
+                </Route>
               </Routes>
             </Suspense>
           </AuthProvider>

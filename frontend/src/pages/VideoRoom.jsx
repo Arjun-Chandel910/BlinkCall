@@ -247,9 +247,6 @@ export default function VideoRoom() {
                 playsInline
                 className="w-full h-full object-cover rounded-xl bg-gray-800 shadow-lg"
               />
-              <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white text-lg bg-black bg-opacity-60 px-3 py-1 rounded-lg">
-                {id}
-              </p>
             </div>
           ))}
         </div>

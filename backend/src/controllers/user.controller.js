@@ -24,7 +24,14 @@ export const register = async (req, res) => {
       password: hashedPassword,
     });
     await newUser.save();
-    return res.status(status.CREATED).json({ message: "User Created!" });
+    const thisUser = await User.findOne({ email });
+    console.log(thisUser);
+    const token = jwt.sign(
+      { id: thisUser._id, email },
+      process.env.JWT_SECRET_KEY
+    );
+
+    return res.status(status.CREATED).json({ token, message: "User Created!" });
   } catch (e) {
     res.json({ message: "Something went wrong" + e });
   }

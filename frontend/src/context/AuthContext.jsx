@@ -1,6 +1,7 @@
 import axios from "axios";
 import status from "http-status";
 import { createContext, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast, Bounce } from "react-toastify";
 
 const AuthContext = createContext();
@@ -10,6 +11,7 @@ const client = axios.create({
 });
 
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const handleRegister = async (name, email, password) => {
     try {
       const request = await client.post("/register", {
@@ -29,8 +31,9 @@ export const AuthProvider = ({ children }) => {
           theme: "dark",
           transition: Bounce,
         });
-
-        return request.data.message;
+        console.log(request.data.token);
+        localStorage.setItem("authToken", request.data.token);
+        navigate("/");
       }
     } catch (e) {
       toast.error(
@@ -56,11 +59,9 @@ export const AuthProvider = ({ children }) => {
         password: password,
       });
       if (request.status === 200) {
-        const token = request.data.token;
-        localStorage.setItem("auth-token", token);
         toast.success(request.data.message, {
           position: "top-center",
-          autoClose: 5000,
+          autoClose: 2000,
           hideProgressBar: false,
           closeOnClick: false,
           pauseOnHover: true,
@@ -70,6 +71,9 @@ export const AuthProvider = ({ children }) => {
           transition: Bounce,
         });
       }
+      console.log(request.data.token);
+      localStorage.setItem("authToken", request.data.token);
+      navigate("/");
     } catch (e) {
       toast.error(
         e.response?.data?.message || e.message || "Something went wrong",
@@ -87,10 +91,14 @@ export const AuthProvider = ({ children }) => {
       );
     }
   };
+  const authToken = () => {
+    return localStorage.getItem("authToken");
+  };
 
   const data = {
     handleRegister,
     handleLogin,
+    authToken,
   };
 
   return <AuthContext.Provider value={data}>{children}</AuthContext.Provider>;

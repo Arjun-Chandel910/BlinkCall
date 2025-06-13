@@ -3,9 +3,14 @@ import phonesImage from "../utils/Group 77.png";
 import BlurText from "../utils/BlurText";
 import Beams from "../utils/Beams";
 import "../App.css";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { toast, Bounce } from "react-toastify";
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const { authToken } = useAuth();
+  console.log(authToken());
   return (
     <div
       className="landingPageContainer"
@@ -33,7 +38,36 @@ export default function LandingPage() {
           <div className="navlist">
             <h3>Join as Guest</h3>
             <h3>Register</h3>
-            <button>Login</button>
+            {authToken() ? (
+              <button
+                onClick={() => {
+                  localStorage.removeItem("authToken");
+                  toast.info("Logged out!", {
+                    position: "top-center",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: false,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                    transition: Bounce,
+                  });
+
+                  navigate("/");
+                }}
+              >
+                Logout
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  navigate("/auth");
+                }}
+              >
+                Login
+              </button>
+            )}
           </div>
         </nav>
 
@@ -59,17 +93,23 @@ export default function LandingPage() {
               />
             </span>
             <div>
-              <Link
-                to={"/auth"}
-                style={{
-                  color: "black",
-                  textDecoration: "none",
-                  paddingInline: "auto",
-                  paddingBlock: "auto",
-                }}
-              >
-                Get Started
-              </Link>
+              {authToken() ? (
+                <p
+                  onClick={() => {
+                    navigate("/roomcode");
+                  }}
+                >
+                  Join a room
+                </p>
+              ) : (
+                <p
+                  onClick={() => {
+                    navigate("/auth");
+                  }}
+                >
+                  Get Started
+                </p>
+              )}
             </div>
           </div>
 
