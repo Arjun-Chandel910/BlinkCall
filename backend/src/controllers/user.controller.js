@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { status } from "http-status";
+
+import httpStatus from "http-status"; // ✅ Changed here
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
@@ -12,10 +13,14 @@ export const register = async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Please provide details" });
     }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(status.FOUND).json({ message: "User already exists." });
+      return res
+        .status(httpStatus.FOUND)
+        .json({ message: "User already exists." });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -23,17 +28,20 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
     });
+
     await newUser.save();
     const thisUser = await User.findOne({ email });
-    console.log(thisUser);
+
     const token = jwt.sign(
       { id: thisUser._id, email },
       process.env.JWT_SECRET_KEY
     );
 
-    return res.status(status.CREATED).json({ token, message: "User Created!" });
+    return res
+      .status(httpStatus.CREATED)
+      .json({ token, message: "User Created!" });
   } catch (e) {
-    res.json({ message: "Something went wrong" + e });
+    res.json({ message: "Something went wrong: " + e });
   }
 };
 
@@ -44,10 +52,11 @@ export const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: "Please provide details" });
     }
+
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
       return res
-        .status(status.NOT_FOUND)
+        .status(httpStatus.NOT_FOUND)
         .json({ message: "User does not exist." });
     }
 
@@ -55,7 +64,7 @@ export const login = async (req, res) => {
 
     if (!isPassCorrect) {
       return res
-        .status(status.UNAUTHORIZED)
+        .status(httpStatus.UNAUTHORIZED)
         .json({ message: "Invalid credentials!" });
     }
 
@@ -63,8 +72,9 @@ export const login = async (req, res) => {
       { id: existingUser._id, email },
       process.env.JWT_SECRET_KEY
     );
-    res.status(status.OK).json({ token, message: "User Logged in!" });
+
+    res.status(httpStatus.OK).json({ token, message: "User Logged in!" });
   } catch (e) {
-    res.json({ message: "Something went wrong" + e });
+    res.json({ message: "Something went wrong: " + e });
   }
 };
