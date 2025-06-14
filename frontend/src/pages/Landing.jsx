@@ -36,14 +36,14 @@ export default function LandingPage() {
             <h1>BlinkCall</h1>
           </div>
           <div className="navlist">
-            <h3
+            <button
               onClick={() => {
                 navigate("/auth");
               }}
               className="pointer"
             >
               Register
-            </h3>
+            </button>
             {authToken() ? (
               <button
                 onClick={() => {
