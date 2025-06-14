@@ -287,9 +287,12 @@ export default function VideoRoom() {
             <video
               key={peerId}
               ref={(el) => {
-                if (el && !el.srcObject) el.srcObject = stream;
+                if (el && stream && !el.srcObject) {
+                  el.srcObject = stream;
+                }
               }}
               autoPlay
+              playsInline
               className="w-full h-48 sm:h-64 bg-black rounded"
             />
           ))}
