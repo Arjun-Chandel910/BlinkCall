@@ -26,10 +26,10 @@ const Authentication = () => {
     try {
       if (mode === "signup") {
         await handleRegister(name, email, password);
-        navigate("/dashboard"); // Change to your target route
+        navigate("/");
       } else {
         await handleLogin(email, password);
-        navigate("/dashboard"); // Change to your target route
+        navigate("/");
       }
     } catch (error) {
       console.error("Auth failed:", error);
